@@ -1,53 +1,36 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
+const {requireAuth} = require("./middlewares/auth")
 const cookieParser = require("cookie-parser");
+const {signToken} = require('./utils/auth')
 const bcrypt = require("bcrypt");
+const helmet = require("helmet");
+const cors = require("cors");
+const morgan = require('morgan');
+
 require('dotenv').config();
 
 const app = express();
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.json());
+app.use(morgan(isProduction ? 'dev': 'combined'));
+app.use(helmet());
+app.use(cors({
+    origin: process.env.ALLOWED_CORS,
+    credentials: true
+}));
 
 const cookieOptions = {
     maxAge: 15 * 60 * 1000, // 15 min
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     signed: true,
     sameSite: 'lax',
     httpOnly: true
 };
 
 
-// util methods
-
-const signToken = (payload) => {
-    return jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: '15m'
-    });
-}
-
-const verifyToken = (token, opts = {}) => {
-    try {
-        return jwt.verify(token, process.env.JWT_SECRET, opts);
-    }
-    catch(err) {
-        return null;
-    }
-}
-
-const requireAuth = (req, res, next) => {
-    if(!req.signedCookies.token) {
-        res.status(401).send({message: "invalid token"});
-        return;
-    }
-    const token = req.signedCookies.token;
-    const payload = verifyToken(token);
-    if(!payload) {res.status(401).send({message: "invalid token"});
- return;}
-   
-    req.user = payload;
-    next();
-};
 
 const users = [
     {

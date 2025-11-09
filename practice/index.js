@@ -10,8 +10,8 @@ require("dotenv").config();
 const app = express();
 
 app.use(cookieParser('verysecret-ket'))
-app.use(express.static("public", ));
-
+app.use(express.static("public"));
+app.use(express.urlencoded({extended: true}));
 
 // parses incoming json
 app.use(express.json());
@@ -54,6 +54,77 @@ app.get("/queryparams", (req, res) => {
         params: req.query
     })
 });
+
+const arrayOfMiddleWares = [(req, res, next) => {
+    console.log(req.originalUrl);
+
+    next();
+}, (req, res, next) => {
+    console.log(req.method);
+    next()
+}];
+
+app.get('/user/:id', arrayOfMiddleWares, (req, res, next) => {
+  // if the user ID is 0, skip to the next route
+  if (req.params.id === '0') next('route')
+  // otherwise pass the control to the next middleware function in this stack
+  else next()
+}, (req, res, next) => {
+  // send a regular response
+  res.send('regular')
+})
+
+// handler for the /user/:id path, which sends a special response
+app.get('/user/:id', (req, res, next) => {
+  res.send('special')
+})
+
+
+
+// Normal route
+app.get("/error", (req, res) => {
+  throw new Error("Something went wrong!"); // Simulating an error
+});
+
+
+// Error-handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Log the error stack for debugging
+  res.status(500).json({ message: "Internal Server Error" });
+});
+
+
+// custom errors
+
+class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
+app.get("/secret", (req, res, next) => {
+  next(new ApiError(403, "Forbidden: Access denied"));
+});
+
+
+app.post("/encode", (req, res) => {
+    console.log(req.body);
+    res.send(200);
+});
+
+app.use((err, req, res, next) => {
+  const isProd = process.env.NODE_ENV === "production";
+  console.error(err);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: isProd ? "Something went wrong" : err.message,
+    ...(isProd ? {} : { stack: err.stack }),
+  });
+});
+
+
 
 app.listen(process.env.PORT, (error) => {
     if(!error) {
