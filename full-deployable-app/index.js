@@ -87,6 +87,12 @@ app.get("/logout", (req,res) => {
     });
 });
 
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "ok"
+    })
+})
+
 app.listen(process.env.PORT, (err) => {
     if(!err) {
         console.log(`Server Started at port ${process.env.PORT}`)
