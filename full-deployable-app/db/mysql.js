@@ -25,10 +25,6 @@ const mysqlConnection = () => {
 }
 
 
-console.log({
-
-})
-
 const mysqlPool = mysqlPromises.createPool({
         database: process.env.MYSQL_DATABASE,
         user:  process.env.MYSQL_USER,
@@ -41,15 +37,7 @@ const mysqlPool = mysqlPromises.createPool({
 });
 
 
-mysqlPool
-    .getConnection()
-    .then((conn) => {
-        console.log('✅ MySQL Pool ready');
-        conn.release();
-    })
-    .catch(err => {
-        console.error({message: 'mysql connection error', err});
-    })
+
 
 
 module.exports = {
