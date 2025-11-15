@@ -9,7 +9,7 @@ const router = Router();
 const { requireAuth } = require("../middlewares/auth");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
-
+const { getUserService, insertUserService } = require("../services/userService");
 
 router.post('/register', async (req, res) => {
   if (!req.body.username || !req.body.password || !req.body.firstName) {
@@ -22,8 +22,7 @@ router.post('/register', async (req, res) => {
   let connection = await mysqlPool.getConnection();
   try {
 
-    const dbUser = await connection.query("SELECT username FROM users WHERE username=? LIMIT 1", [username]);
-
+    const dbUser = await getUserService(connection, username);
     if (dbUser[0].length) {
       return res.status(400).send({
         message: "username already exists"
@@ -31,7 +30,12 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await connection.query("INSERT INTO users(username, password, first_name, last_name) VALUES(?,?,?,?);", [username, hashedPassword, firstName, lastName]);
+    await insertUserService(connection, {
+      username,
+      password: hashedPassword,
+      firstName, 
+      lastName
+    });
 
     res.status(200).send({
       message: "User Inserted Successfully"
@@ -57,7 +61,7 @@ router.post("/login", async (req, res) => {
 
   const connection = await mysqlPool.getConnection();
   try {
-    const [users] = await connection.query("SELECT user_id, username, password FROM users WHERE username = ? LIMIT 1", [req.body.username]);
+    const [users] = await getUserService(connection, req.body.username, true);
 
     if (users.length === 0) {
       res.status(400).send({
@@ -145,10 +149,7 @@ router.get("/getuser", requireAuth, async (req, res) => {
     connection = await mysqlPool.getConnection();
 
     // minimal query — just fetch username existence
-    const [rows] = await connection.query(
-      "SELECT username FROM users WHERE username = ? LIMIT 1",
-      [username]
-    );
+    const [rows] = await getUserService(connection, username);
 
     if (rows.length === 0) {
       return res.status(404).json({ found: false, username });

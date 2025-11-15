@@ -1,16 +1,17 @@
-const { createClient } = require("redis");
+// db/redis.js
+const { createClient } = require('redis');
 
 const client = createClient({
-    url: process.env.REDIS_URL
+  url: process.env.REDIS_URL
 });
 
-client.on("error", (err) => {
-    console.error("Redis Client Error: ", err);
-});
-
-
-client.connect().then(() => {
-    console.log("Connected to Redis");
-});
+// only auto-connect in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  client.connect().then(() => {
+    console.log('Connected to Redis');
+  }).catch(err => {
+    console.error('Redis connection error', err);
+  });
+}
 
 module.exports = client;
