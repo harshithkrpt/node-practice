@@ -24,7 +24,7 @@ const generateRefreshToken = (user) => {
         sub: user.id,
         jti
     }, process.env.JWT_REFRESH_SECRET, {
-        expiresIn: JWT_REFRESH_TTL
+        expiresIn: process.env.JWT_REFRESH_TTL
     });
 
     return {

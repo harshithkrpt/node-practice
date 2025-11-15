@@ -1,4 +1,4 @@
-const { verifyToken } = require("../utils/auth");
+const { verifyToken } = require("../utils/auth.js");
 
 // const requireAuth = (req, res, next) => {
 //     if (!req.signedCookies.token) {

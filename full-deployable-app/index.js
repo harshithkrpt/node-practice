@@ -47,7 +47,7 @@ app.use(cors({
 app.use("/auth", authRoute);
 app.use("/file", fileUploadRoute);
 
-app.get("/", (req, res) => {
+app.get("/", authRoute , (req, res) => {
     res.send({...req.user})
 });
 

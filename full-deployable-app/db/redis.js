@@ -9,6 +9,8 @@ client.on("error", (err) => {
 });
 
 
-await client.connect();
+client.connect().then(() => {
+    console.log("Connected to Redis");
+});
 
 module.exports = client;

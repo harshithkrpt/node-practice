@@ -1,120 +1,120 @@
 const { Router } = require('express');
-const {getCookieOptions} = require("../utils/common");
-const {mysqlPool} = require("../db/mysql");
+const { mysqlPool } = require("../db/mysql");
 const bcrypt = require("bcrypt");
-const {signAccessToken, generateRefreshToken, storeRefreshToken,
+const { signAccessToken, generateRefreshToken,
   isRefreshTokenValid,
   revokeRefreshToken,
-  storeRefreshToken,} = require("../utils/auth");
+  storeRefreshToken, } = require("../utils/auth.js");
 const router = Router();
 const { requireAuth } = require("../middlewares/auth");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
-// in authRoutes.js
+
 
 router.post('/register', async (req, res) => {
-    if (!req.body.username || !req.body.password || !req.body.firstName) {
-        res.status(400).send({
-            message: "Bad Request"
-        });
+  if (!req.body.username || !req.body.password || !req.body.firstName) {
+    res.status(400).send({
+      message: "Bad Request"
+    });
+  }
+  const { username, password, firstName, lastName = "" } = req.body;
+
+  let connection = await mysqlPool.getConnection();
+  try {
+
+    const dbUser = await connection.query("SELECT username FROM users WHERE username=? LIMIT 1", [username]);
+
+    if (dbUser[0].length) {
+      return res.status(400).send({
+        message: "username already exists"
+      });
     }
-    const { username, password, firstName, lastName = "" } = req.body;
 
-    let connection = await mysqlPool.getConnection();
-    try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await connection.query("INSERT INTO users(username, password, first_name, last_name) VALUES(?,?,?,?);", [username, hashedPassword, firstName, lastName]);
 
-        const dbUser = await connection.query("SELECT username FROM users WHERE username=? LIMIT 1", [username]);
-
-        if (dbUser[0].length) {
-            return res.status(400).send({
-                message: "username already exists"
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await connection.query("INSERT INTO users(username, password, first_name, last_name) VALUES(?,?,?,?);", [username, hashedPassword, firstName, lastName]);
-
-        res.status(200).send({
-            message: "User Inserted Successfully"
-        });
-    }
-    catch (err) {
-        res.status(500).send({
-            message: "Something Went Wrong!"
-        });
-    }
-    finally {
-        connection.release();
-    }
+    res.status(200).send({
+      message: "User Inserted Successfully"
+    });
+  }
+  catch (err) {
+    res.status(500).send({
+      message: "Something Went Wrong!"
+    });
+  }
+  finally {
+    connection.release();
+  }
 });
 
 router.post("/login", async (req, res) => {
-    if (!req?.body?.username || !req?.body?.password) {
-        res.status(400).send({
-            message: "bad request"
-        });
-        return;
+  if (!req?.body?.username || !req?.body?.password) {
+    res.status(400).send({
+      message: "bad request"
+    });
+    return;
+  }
+
+  const connection = await mysqlPool.getConnection();
+  try {
+    const [users] = await connection.query("SELECT user_id, username, password FROM users WHERE username = ? LIMIT 1", [req.body.username]);
+
+    if (users.length === 0) {
+      res.status(400).send({
+        message: "user not found"
+      });
+      return;
     }
 
-    const connection = await mysqlPool.getConnection();
-    try {
-        const [users] = await connection.query("SELECT id, username, password FROM users WHERE username = ? LIMIT 1", [req.body.username]);
-
-        if (users.length === 0) {
-            res.status(400).send({
-                message: "user not found"
-            });
-            return;
-        }
-
-        const ok = await bcrypt.compare(req.body.password, users[0].password);
-        if (!ok) {
-            res.status(400).send({
-                message: "invalid credentials"
-            });
-            return;
-        }
-
-        const accessToken = signAccessToken({ username: req.body.username, sub: user[0].id });
-
-        const {jti, token: refreshToken} = generateRefreshToken({
-            id: users[0].id
-        });
-
-        const decoded = jwt.decode(refreshToken);
-        const expSeconds = decoded.exp - decoded.iat;
-
-        await storeRefreshToken(users[0].id, jti, expSeconds);
-
-        // res.cookie('token', token, getCookieOptions())
-
-        res.status(200).json({
-            message: "user logged in",
-            accessToken,
-            refreshToken
-        });
+    const ok = await bcrypt.compare(req.body.password, users[0].password);
+    if (!ok) {
+      res.status(400).send({
+        message: "invalid credentials"
+      });
+      return;
     }
-    catch (err) {
-        res.status(500).json({
-            message: "something went wrong"
-        });
-    }
-    finally {
-        connection.release();
-    }
+
+    const accessToken = signAccessToken({ username: req.body.username, sub: users[0].user_id });
+
+    const { jti, token: refreshToken } = generateRefreshToken({
+      id: users[0].user_id
+    });
+
+    const decoded = jwt.decode(refreshToken);
+    const expSeconds = decoded.exp - decoded.iat;
+
+    await storeRefreshToken(users[0].user_id, jti, expSeconds);
+
+    // res.cookie('token', token, getCookieOptions())
+
+    res.status(200).json({
+      message: "user logged in",
+      accessToken,
+      refreshToken
+    });
+  }
+  catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "something went wrong"
+    });
+  }
+  finally {
+    connection.release();
+  }
 });
 
 // protected route
 router.get("/profile", requireAuth, (req, res) => {
-    res.send({
-        response: {
-            ...req.user
-        }
-    });
+  res.send({
+    response: {
+      ...req.user
+    }
+  });
 });
 
-router.post("/logout" ,(req, res, next) => {
-   const { refreshToken } = req.body;
+router.post("/logout", (req, res, next) => {
+  const { refreshToken } = req.body;
 
   if (!refreshToken) {
     return res.status(400).json({ message: "Missing refresh token" });
@@ -136,7 +136,7 @@ router.post("/logout" ,(req, res, next) => {
 });
 
 
-router.get("/getuser", requireAuth ,async (req, res) => {
+router.get("/getuser", requireAuth, async (req, res) => {
   const username = req.query.username;
 
   // borrow a connection from pool
@@ -172,9 +172,9 @@ router.get("/google", passport.authenticate('google', {
 
 // callback url
 router.get("/google/callback", passport.authenticate('google', {
-    failureRedirect: '/',
+  failureRedirect: '/',
 }), (req, res) => {
-    res.redirect("/");
+  res.redirect("/");
 });
 
 
@@ -207,7 +207,7 @@ router.post("/refresh", async (req, res) => {
 
       const user = { id: userId, email: payload.email }; // or fetch from DB
 
-      const accessToken = generateAccessToken(user);
+      const accessToken = signAccessToken(user);
       const { token: newRefreshToken, jti: newJti } = generateRefreshToken(user);
 
       const decodedNew = jwt.decode(newRefreshToken);
