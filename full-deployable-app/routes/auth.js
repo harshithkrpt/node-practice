@@ -10,6 +10,7 @@ const { requireAuth } = require("../middlewares/auth");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { getUserService, insertUserService } = require("../services/userService");
+const {insertRoleService, getUserIdRoles} = require('../services/roleService');
 
 router.post('/register', async (req, res) => {
   if (!req.body.username || !req.body.password || !req.body.firstName) {
@@ -30,12 +31,24 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await insertUserService(connection, {
+    const row = await insertUserService(connection, {
       username,
       password: hashedPassword,
       firstName, 
       lastName
     });
+
+    if(row.length) {
+       const userId = row[0].insertId;
+       await insertRoleService(connection, {
+          userId,
+          roleName: 'REQUESTOR'
+       });
+    }
+    else {
+      throw new Error("Cannot Insert the Role");
+    }
+   
 
     res.status(200).send({
       message: "User Inserted Successfully"
@@ -78,10 +91,17 @@ router.post("/login", async (req, res) => {
       return;
     }
 
-    const accessToken = signAccessToken({ username: req.body.username, sub: users[0].user_id });
+    const rolesRes = await getUserIdRoles(connection, users[0].user_id);
+    let roles = [];
+    if(rolesRes.length) {
+      roles = rolesRes[0].map(r => r['role_name']);
+    }
+
+    const accessToken = signAccessToken({ username: req.body.username, sub: users[0].user_id, roles });
 
     const { jti, token: refreshToken } = generateRefreshToken({
-      id: users[0].user_id
+      id: users[0].user_id,
+      username: req.body.username
     });
 
     const decoded = jwt.decode(refreshToken);
@@ -166,17 +186,17 @@ router.get("/getuser", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/google", passport.authenticate('google', {
-  scope: ['profile', 'email']
-}));
+// router.get("/google", passport.authenticate('google', {
+//   scope: ['profile', 'email']
+// }));
 
 
-// callback url
-router.get("/google/callback", passport.authenticate('google', {
-  failureRedirect: '/',
-}), (req, res) => {
-  res.redirect("/");
-});
+// // callback url
+// router.get("/google/callback", passport.authenticate('google', {
+//   failureRedirect: '/',
+// }), (req, res) => {
+//   res.redirect("/");
+// });
 
 
 
@@ -186,8 +206,9 @@ router.post("/refresh", async (req, res) => {
   if (!refreshToken) {
     return res.status(400).json({ message: "Missing refresh token" });
   }
-
-  jwt.verify(
+  let connection = await mysqlPool.getConnection();
+  try {
+      jwt.verify(
     refreshToken,
     process.env.JWT_REFRESH_SECRET,
     async (err, payload) => {
@@ -195,18 +216,22 @@ router.post("/refresh", async (req, res) => {
         return res.status(401).json({ message: "Invalid or expired refresh token" });
       }
 
-      const userId = payload.sub;
+      const sub = payload.sub;
       const jti = payload.jti;
 
-      const valid = await isRefreshTokenValid(userId, jti);
+      const valid = await isRefreshTokenValid(sub, jti);
       if (!valid) {
         return res.status(401).json({ message: "Refresh token revoked" });
       }
 
       // ROTATE refresh token (best practice)
-      await revokeRefreshToken(userId, jti);
-
-      const user = { id: userId, email: payload.email }; // or fetch from DB
+      await revokeRefreshToken(sub, jti);
+      const rolesRes = await getUserIdRoles(connection, sub);
+      let roles = [];
+      if(rolesRes.length) {
+        roles = rolesRes[0].map(r => r['role_name']);
+      } 
+      const user = { sub, username: payload.username, roles }; // or fetch from DB
 
       const accessToken = await signAccessToken(user);
       const { token: newRefreshToken, jti: newJti } = await generateRefreshToken(user);
@@ -214,7 +239,7 @@ router.post("/refresh", async (req, res) => {
       const decodedNew = jwt.decode(newRefreshToken);
       const expSecondsNew = decodedNew.exp - decodedNew.iat;
 
-      await storeRefreshToken(userId, newJti, expSecondsNew);
+      await storeRefreshToken(sub, newJti, expSecondsNew);
 
       res.json({
         accessToken,
@@ -222,6 +247,14 @@ router.post("/refresh", async (req, res) => {
       });
     }
   );
+  }
+  catch(err) {
+
+  }
+  finally {
+    connection.release();
+  }
+
 });
 
 

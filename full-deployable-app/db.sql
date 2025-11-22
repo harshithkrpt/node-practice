@@ -120,3 +120,29 @@ CREATE TABLE service_requests (
     FOREIGN KEY (requestor_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (site_id) REFERENCES sites(site_id) ON DELETE CASCADE
 );
+
+CREATE TABLE crawled_pages (
+    page_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    site_id INT NOT NULL,
+    url VARCHAR(1000) NOT NULL,
+    status_code INT,
+    title VARCHAR(500) DEFAULT "",
+    content_html LONGTEXT,
+    content_text LONGTEXT,
+    fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(site_id) 
+        ON DELETE CASCADE,
+    INDEX idx_crawled_pages_site (site_id),
+    INDEX idx_crawled_pages_url (url(255))
+);
+
+CREATE TABLE crawl_runs (
+    crawl_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    site_id INT NOT NULL,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ended_at DATETIME NULL,
+    status ENUM('PENDING', 'RUNNING', 'SUCCESS', 'FAILED') DEFAULT 'PENDING',
+    error_message TEXT,
+    FOREIGN KEY (site_id) REFERENCES sites(site_id) 
+    ON DELETE CASCADE
+);

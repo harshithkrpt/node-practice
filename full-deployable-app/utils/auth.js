@@ -3,6 +3,10 @@ const { v4 : uuidv4 } = require("uuid");
 const redis = require("../db/redis");
 
 const signAccessToken = (payload) => {
+    if(!payload.username || !payload.sub || !payload.roles.length) {
+        throw new Error("Payload is in Correct");
+    }
+    
     return jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
         expiresIn: process.env.JWT_ACCESS_TTL
     });
@@ -22,7 +26,8 @@ const generateRefreshToken = (user) => {
 
     const token = jwt.sign({
         sub: user.id,
-        jti
+        jti,
+        username: user.username
     }, process.env.JWT_REFRESH_SECRET, {
         expiresIn: process.env.JWT_REFRESH_TTL
     });
