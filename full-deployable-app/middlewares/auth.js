@@ -31,7 +31,7 @@ function requireAuth(req, res, next) {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
 
-    req.user = { id: payload.sub, email: payload.email, roles: payload.roles };
+    req.user = { userId: payload.sub, email: payload.email, roles: payload.roles };
     next();
   });
 }

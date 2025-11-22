@@ -15,7 +15,7 @@ function requireRole(roleName) {
 function requireSiteOwnerOrAdmin() {
   return async (req, res, next) => {
     const siteId = req.params.siteId;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     // Admin fast-path
     if (req.user.roles?.includes('ADMIN')) return next();
@@ -29,7 +29,7 @@ function requireSiteOwnerOrAdmin() {
 function requireSiteReadAccess() {
   return async (req, res, next) => {
     const siteId = req.params.siteId;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     if (req.user.roles?.includes('ADMIN')) return next();
 
