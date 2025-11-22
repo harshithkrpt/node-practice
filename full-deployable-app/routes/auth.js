@@ -208,8 +208,8 @@ router.post("/refresh", async (req, res) => {
 
       const user = { id: userId, email: payload.email }; // or fetch from DB
 
-      const accessToken = signAccessToken(user);
-      const { token: newRefreshToken, jti: newJti } = generateRefreshToken(user);
+      const accessToken = await signAccessToken(user);
+      const { token: newRefreshToken, jti: newJti } = await generateRefreshToken(user);
 
       const decodedNew = jwt.decode(newRefreshToken);
       const expSecondsNew = decodedNew.exp - decodedNew.iat;

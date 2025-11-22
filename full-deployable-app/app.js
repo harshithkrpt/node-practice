@@ -5,6 +5,8 @@ const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require('morgan');
 const session = require("express-session");
+const passport = require("passport");
+
 // dot env
 require('dotenv').config();
 
@@ -12,7 +14,7 @@ const { isProduction  } = require("./utils/common");
 
 const authRoute = require("./routes/auth")
 const fileUploadRoute = require("./routes/fileupload");
-const passport = require("passport");
+
 const app = express();
 const { setupPassport } = require("./utils/passport-config");
 
