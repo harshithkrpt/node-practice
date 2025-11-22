@@ -14,7 +14,8 @@ const { isProduction  } = require("./utils/common");
 
 const authRoute = require("./routes/auth")
 const fileUploadRoute = require("./routes/fileupload");
-
+const sitesRoute = require('./routes/sites');
+const crawlRoute = require('./routes/crawl');
 const app = express();
 const { setupPassport } = require("./utils/passport-config");
 
@@ -48,6 +49,8 @@ app.use(cors({
 // routes
 app.use("/auth", authRoute);
 app.use("/file", fileUploadRoute);
+app.use("/sites", sitesRoute);
+app.use('/crawl', crawlRoute);
 
 app.get("/", authRoute , (req, res) => {
     res.send({...req.user})

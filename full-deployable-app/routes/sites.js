@@ -1,4 +1,3 @@
-// routes/sites.routes.js
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middlewares/auth');
