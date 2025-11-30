@@ -1,0 +1,23 @@
+
+> background-jobs@1.0.0 start:worker
+> node src/workers/worker.js
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[Worker] Initializing with QUEUE_NAME=events
+[Worker] Starting worker for queue: events with concurrency: 5
+[Worker] events JOB 7 is now active
+[Worker] Processing job 7 of type sendNotification
+Sending Notification to asha@example.com test to verify logging
+[Worker] events JOB 7 completed
+[Worker] events JOB 8 is now active
+[Worker] Processing job 8 of type sendNotification
+Sending Notification to asha@example.com test message from curl
+[Worker] events JOB 8 completed
+[Worker] events JOB 10 is now active
+[Worker] Processing job 10 of type sendNotification
+Sending Notification to asha@example.com test message from curl
+[Worker] events JOB 10 completed
+[Worker] events JOB 12 is now active
+[Worker] Processing job 12 of type sendNotification
+Sending Notification to asha@example.com test message from curl
+[Worker] events JOB 12 completed
