@@ -254,3 +254,89 @@ You are the semantic enforcer.
 No nested structures
 
 There are no hash-inside-hash unless you encode/namespace manually.
+
+- LPUSH , LPOP , RPUSH, RPOP
+
+```sh
+LPUSH user:1:name "one" "two" "three"
+```
+
+```sh
+LPOP user:1:name
+```
+
+```sh
+RPOP user:1:name
+```
+
+```sh
+RPUSH user:1:name "four"
+```
+
+- to list the range 0 starting -1 ending
+```sh
+LRANGE user:1:name 0 -1
+```
+
+- LLEN to count
+
+```sh
+LLEN user:1:name
+```
+
+- blpop wait for some one to push elements
+
+```sh
+BLPOP tasks 0
+```
+
+<!-- That waits indefinitely until someone pushes a value into tasks. In another terminal: -->
+
+- SADD
+- SPOP 
+- SMEMBERS
+- SISMEMBER
+
+```sh
+SADD sets:sample apple ball cat
+``
+
+```sh
+SISMEMBER sets:sample apple
+```
+
+```sh
+SMEMBERS sets:sample
+```
+
+- pops a random 
+
+```sh
+SPOP sets:sample
+```
+
+- Grab a random sample without removing (just for fun):
+
+```sh
+SRANDMEMBER sets:sample 2
+```
+
+- ZADD - adding with scores
+- ZRANGE - getting all the elements within range
+- ZREVRANGE - getting all elemente reverse score
+- ZRANK - rank 
+- ZREVRANK - reverse rank
+- ZCOUNT - count how many within range
+- ZINCRBY -> increment the score
+
+```sh
+ZADD sorted:set 100 harshith 200 sadvika 300 pushpa
+ZRANGE sorted:set 0 -1
+ZRANGE sorted:set 0 -1 WITHSCORES
+ZREVRANGE sorted:set 0 -1 WITHSCORES
+ZCOUNT sorted:set 0 200
+ZRANK sorted:set pushpa
+ZREVRANK sorted:set pushpa
+ZINCRBY sorted:set 150 sadvika
+ZREM leaderboard "alice" "bob"
+```

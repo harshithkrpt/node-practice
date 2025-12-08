@@ -35,8 +35,6 @@
 * `HSET`, `HGET`, `HGETALL`, `HINCRBY`, `HDEL`
 
 
-
-
 **List (queues)**
 
 * `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `BLPOP`
